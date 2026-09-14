@@ -1,0 +1,67 @@
+name: ai-avatar-uth
+
+services:
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-avatar-uth-nextjs
+    ports:
+      - "3001:3001"
+    stdin_open: true 
+    volumes:
+      - ./:/app
+      - uth_nextjs_node_modules:/app/node_modules
+    command: npm run dev                     #-Comando para iniciar la aplicación Next.js en modo desarrollo
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NODE_ENV=development
+      - GEMINI_API_KEY=${GEMINI_API_KEY}     #-Clave secreta de gemini guardada en .env
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - CHROMA_URL=http://uth-chroma:8000
+      - CHROMA_COLLECTION_NAME=${CHROMA_COLLECTION_NAME:-school_documents}  #-Se define el nombre de la coleccion vectorial (school_documents).
+      
+      # --- Módulo de trámites ---
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-uth_user}:${POSTGRES_PASSWORD:-uth_pass}@uth-postgres:5432/${POSTGRES_DB:-uth_tramites}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SENDGRID_TO_EMAIL=${SENDGRID_TO_EMAIL}
+      - ADMIN_KEY=${ADMIN_KEY}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3001}
+      
+    depends_on:
+      - uth-chroma
+      - uth-postgres
+
+  uth-chroma:
+    image: chromadb/chroma:latest
+    container_name: ai-avatar-uth-chroma
+    ports:
+      - "8001:8000"
+    volumes:
+      - uth_chroma_data:/chroma/chroma
+    restart: unless-stopped
+
+  uth-postgres:
+    image: postgres:16-alpine
+    container_name: ai-avatar-uth-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-uth_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-uth_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-uth_tramites}
+    volumes:
+      - uth_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+
+  uth_chroma_data:
+    name: ai-avatar-uth_chroma_data
+
+  uth_postgres_data:
+    name: ai-avatar-uth_postgres_data
+    
+  uth_nextjs_node_modules:
+    name: ai-avatar-uth_nextjs_node_modules
