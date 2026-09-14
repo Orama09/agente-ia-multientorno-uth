@@ -67,7 +67,7 @@ function StageShell({ children }: { children: ReactNode }) {
           <img
             src="/images/logo_uth.png"
             alt="Logo UTH"
-            className="h-auto max-h-14 sm:max-h-20 w-auto max-w-full object-contain"
+            className="h-auto max-h-28 sm:max-h-32 w-auto max-w-full object-contain -mt-6 sm:-mt-7"
           />
         </div>
 
