@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Copy, Check } from "lucide-react";
 import {
   TRAMITE_ESTADO_LABELS,
@@ -34,6 +35,13 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
   const [resultado, setResultado] = useState<Tramite | null>(null);
   const [errorConsulta, setErrorConsulta] = useState<string | null>(null);
 
+  // 👇 NUEVO: el Portal solo puede montarse en el cliente (document no
+  // existe durante el render en servidor de Next.js).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const resetFormularioNueva = () => {
     setNombre("");
     setMatricula("");
@@ -60,7 +68,8 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
     }
   }, [open]);
 
-  if (!open) return null;
+  // 👇 CAMBIO: ahora también depende de "mounted"
+  if (!open || !mounted) return null;
 
   const handleCrear = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -129,9 +138,16 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
   const resultadoResuelto =
     resultado?.estado === "completado" || resultado?.estado === "rechazado";
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 relative max-h-[90vh] overflow-y-auto">
+  // 👇 NUEVO: todo el JSX del modal ahora vive en una variable...
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
@@ -344,4 +360,11 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
       </div>
     </div>
   );
+
+  // 👇 NUEVO: en vez de "return modalContent" directo, usamos Portal
+  // para inyectarlo en <body>, fuera del árbol de React donde vive
+  // este componente (AgentDock, layout, etc.) y de cualquier
+  // stacking context que ese árbol pudiera tener (backdrop-blur,
+  // transform, etc. crean stacking contexts que "atrapan" el z-index).
+  return createPortal(modalContent, document.body);
 }
