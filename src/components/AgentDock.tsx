@@ -102,7 +102,7 @@ export default function AgentDock({ className }: AgentDockProps) {
           onClick={() => setTramitesOpen(true)}
           className="w-full text-sm font-medium text-white bg-[#8C6F23] py-2 hover:bg-[#6e561c] transition-colors"
         >
-          📄 Solicitar trámite / consultar estatus
+          📄 Solicitud de Pasantía en I+D+i
         </button>
       </div>
 
