@@ -19,6 +19,7 @@ type SpeechControlsProps = {
    * "stop-only" = solo botón Detener (uso en la barra del input).
    */
   variant?: "advanced" | "stop-only";
+  hideStop?: boolean;
 };
 
 /**
@@ -76,6 +77,7 @@ export default function SpeechControls({
   onVoiceChange,
   onRateChange,
   onStop,
+  hideStop = false,
   variant = "advanced",
 }: SpeechControlsProps) {
   if (!isSupported || !isEnabled) return null;
@@ -136,7 +138,7 @@ export default function SpeechControls({
         ))}
       </select>
 
-      <StopSpeechButton onStop={onStop} active={isSpeaking} />
+      {!hideStop && <StopSpeechButton onStop={onStop} active={isSpeaking} />}
     </div>
   );
 }
