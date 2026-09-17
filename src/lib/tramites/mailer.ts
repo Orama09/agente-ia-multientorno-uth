@@ -1,6 +1,10 @@
 import sgMail from "@sendgrid/mail";
 import type { Tramite } from "@/types/tramite";
-import { TRAMITE_TIPOS } from "@/types/tramite";
+import {
+  TRAMITE_ESTADO_LABELS,
+  TRAMITE_NUMEROS_PASANTIA,
+  TRAMITE_TIPOS,
+} from "@/types/tramite";
 
 const HORARIO_CONTROL_ESCOLAR =
   "El horario de atención del Departamento de Control Escolar es de lunes a viernes, de 09:00 a 14:00 y de 15:00 a 18:00 hrs.";
@@ -46,6 +50,14 @@ function toHtmlEntities(str: string): string {
   return str.replace(/[áéíóúÁÉÍÓÚñÑüÜ°]/g, (m) => map[m] ?? m);
 }
 
+function getNumeroPasantiaLabel(tramite: Tramite): string {
+  return (
+    TRAMITE_NUMEROS_PASANTIA.find(
+      (opcion) => opcion.value === tramite.numeroPasantia
+    )?.label ?? "No especificada"
+  );
+}
+
 export async function notifyNuevoTramite(tramite: Tramite): Promise<void> {
   const to = process.env.SENDGRID_TO_EMAIL;
   const baseUrl = process.env.APP_BASE_URL ?? "http://localhost:3001";
@@ -56,6 +68,34 @@ export async function notifyNuevoTramite(tramite: Tramite): Promise<void> {
 
   const tipoLabel =
     TRAMITE_TIPOS.find((t) => t.value === tramite.tipo)?.label ?? tramite.tipo;
+  const esSolicitudPasantia = tramite.tipo === "solicitud_pasantia_idi";
+  const subject = esSolicitudPasantia
+    ? `Nueva solicitud de pasantía en I+D+i — Folio ${tramite.folio}`
+    : `Nueva solicitud de trámite — Folio ${tramite.folio}`;
+  const detalleSolicitud = esSolicitudPasantia
+    ? `
+              <h3>Nueva solicitud de pasantía en I+D+i</h3>
+              <p><strong>Folio:</strong> ${tramite.folio}</p>
+              <p><strong>Nombre completo:</strong> ${tramite.nombre}</p>
+              <p><strong>Número de cuenta:</strong> ${tramite.matricula}</p>
+              <p><strong>Carrera:</strong> ${tramite.carrera}</p>
+              <p><strong>Correo institucional:</strong> ${tramite.correo}</p>
+              <p><strong>Número de pasantía:</strong> ${getNumeroPasantiaLabel(tramite)}</p>
+              <p><strong>Departamento solicitado:</strong> I+D+i</p>
+              <p><strong>Motivo u observaciones:</strong> ${tramite.descripcion}</p>
+              <p><strong>Estado:</strong> ${TRAMITE_ESTADO_LABELS[tramite.estado]}</p>
+      `
+    : `
+              <h3>Nueva solicitud registrada</h3>
+              <p><strong>Folio:</strong> ${tramite.folio}</p>
+              <p><strong>Nombre:</strong> ${tramite.nombre}</p>
+              <p><strong>Matrícula:</strong> ${tramite.matricula}</p>
+              <p><strong>Carrera:</strong> ${tramite.carrera}</p>
+              <p><strong>Semestre:</strong> ${tramite.semestre}°</p>
+              <p><strong>Turno:</strong> ${tramite.turno}</p>
+              <p><strong>Tipo:</strong> ${tipoLabel}</p>
+              <p><strong>Descripción:</strong> ${tramite.descripcion}</p>
+      `;
 
   const enlace = (estado: string) =>
     `${baseUrl}/api/tramites/${tramite.folio}/accion?estado=${estado}&key=${adminKey}`;
@@ -64,7 +104,7 @@ export async function notifyNuevoTramite(tramite: Tramite): Promise<void> {
     await sgMail.send({
       to,
       from: from!,
-      subject: `Nueva solicitud de trámite — Folio ${tramite.folio}`,
+      subject,
       trackingSettings: {
         clickTracking: { enable: false },
         openTracking: { enable: false },
@@ -78,15 +118,7 @@ export async function notifyNuevoTramite(tramite: Tramite): Promise<void> {
           </head>
           <body>
             <div style="font-family: sans-serif; max-width: 480px;">
-              <h3>Nueva solicitud registrada</h3>
-              <p><strong>Folio:</strong> ${tramite.folio}</p>
-              <p><strong>Nombre:</strong> ${tramite.nombre}</p>
-              <p><strong>Matrícula:</strong> ${tramite.matricula}</p>
-              <p><strong>Carrera:</strong> ${tramite.carrera}</p>
-              <p><strong>Semestre:</strong> ${tramite.semestre}°</p>
-              <p><strong>Turno:</strong> ${tramite.turno}</p>
-              <p><strong>Tipo:</strong> ${tipoLabel}</p>
-              <p><strong>Descripción:</strong> ${tramite.descripcion}</p>
+              ${detalleSolicitud}
               <hr />
               <p>Acciones rápidas:</p>
               <p>
@@ -113,6 +145,22 @@ export async function notifyEstadoActualizado(tramite: Tramite): Promise<void> {
   const tipoLabel =
     TRAMITE_TIPOS.find((t) => t.value === tramite.tipo)?.label ?? tramite.tipo;
   const mensajeResolucion = getResolutionMessage(tramite);
+  const esSolicitudPasantiaResuelta =
+    tramite.tipo === "solicitud_pasantia_idi" &&
+    (tramite.estado === "completado" || tramite.estado === "rechazado");
+  const contenidoEstado = esSolicitudPasantiaResuelta
+    ? `
+              <h3>Solicitud de Pasantía en I+D+i</h3>
+              <p><strong>Folio:</strong> ${tramite.folio}</p>
+              <p><strong>Pasantía:</strong> ${getNumeroPasantiaLabel(tramite)}</p>
+              <p>Tu solicitud de pasantía en I+D+i ha sido ${tramite.estado === "completado" ? "aceptada" : "rechazada"}.</p>
+      `
+    : `
+              <p>Hola ${tramite.nombre},</p>
+              <p>Tu trámite con folio <strong>${tramite.folio}:</strong> <strong>${tipoLabel}</strong> ha sido actualizado como: <strong>${estadoLabel}</strong>.</p>
+              <p>${mensajeResolucion}</p>
+              <p style="color:#6b7280; font-size:13px;">Puedes consultar el detalle e imprimir tu comprobante desde el portal usando tu folio.</p>
+      `;
 
   try {
     await sgMail.send({
@@ -132,10 +180,7 @@ export async function notifyEstadoActualizado(tramite: Tramite): Promise<void> {
           </head>
           <body>
             <div style="font-family: sans-serif; max-width: 480px;">
-              <p>Hola ${tramite.nombre},</p>
-              <p>Tu trámite con folio <strong>${tramite.folio}:</strong> <strong>${tipoLabel}</strong> ha sido actualizado como: <strong>${estadoLabel}</strong>.</p>
-              <p>${mensajeResolucion}</p>
-              <p style="color:#6b7280; font-size:13px;">Puedes consultar el detalle e imprimir tu comprobante desde el portal usando tu folio.</p>
+              ${contenidoEstado}
             </div>
           </body>
         </html>

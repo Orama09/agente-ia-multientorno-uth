@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { X, Copy, Check } from "lucide-react";
-import { TRAMITE_TIPOS, TRAMITE_ESTADO_LABELS, TRAMITE_TURNOS, type Tramite, type TramiteTipo, type TramiteTurno } from "@/types/tramite";
+import {
+  TRAMITE_ESTADO_LABELS,
+  TRAMITE_NUMEROS_PASANTIA,
+  type Tramite,
+  type TramiteNumeroPasantia,
+} from "@/types/tramite";
 
 type TramitesModalProps = {
   open: boolean;
@@ -15,10 +20,9 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
   const [nombre, setNombre] = useState("");
   const [matricula, setMatricula] = useState("");
   const [carrera, setCarrera] = useState("");
-  const [semestre, setSemestre] = useState("");
-  const [turno, setTurno] = useState<TramiteTurno>("matutino");
   const [correo, setCorreo] = useState("");
-  const [tipo, setTipo] = useState<TramiteTipo>("constancia_estudios");
+  const [numeroPasantia, setNumeroPasantia] =
+    useState<TramiteNumeroPasantia>("primera");
   const [descripcion, setDescripcion] = useState("");
   const [creando, setCreando] = useState(false);
   const [creado, setCreado] = useState<Tramite | null>(null);
@@ -33,11 +37,9 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
   const resetFormularioNueva = () => {
     setNombre("");
     setMatricula("");
-    setTipo("constancia_estudios");
     setCarrera("");
-    setSemestre("");
-    setTurno("matutino");
     setCorreo("");
+    setNumeroPasantia("primera");
     setDescripcion("");
     setCreado(null);
     setErrorCrear(null);
@@ -63,7 +65,7 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
   const handleCrear = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setErrorCrear(null);
-    if (!nombre || !matricula || !carrera || !semestre || !turno || !correo || !tipo || !descripcion) {
+    if (!nombre || !matricula || !carrera || !correo || !numeroPasantia || !descripcion) {
       setErrorCrear("Completa todos los campos.");
       return;
     }
@@ -72,7 +74,15 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
       const res = await fetch("/api/tramites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, matricula, carrera, semestre, turno, correo, tipo, descripcion }),
+        body: JSON.stringify({
+          nombre,
+          matricula,
+          carrera,
+          correo,
+          numero_pasantia: numeroPasantia,
+          tipo: "solicitud_pasantia_idi",
+          descripcion,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al crear el trámite.");
@@ -157,71 +167,85 @@ export default function TramitesModal({ open, onClose }: TramitesModalProps) {
             {!creado ? (
               <form onSubmit={handleCrear} className="space-y-3">
                 {/* 👇 punto 2: Enter dentro de este <form> ya envía automáticamente */}
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Nombre empezando por Apellidos" // 👈 punto 3
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  onBlur={(e) => setNombre(e.target.value)}
-                />
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Matrícula"
-                  value={matricula}
-                  onChange={(e) => setMatricula(e.target.value)}
-                  onBlur={(e) => setMatricula(e.target.value)}
-                />
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Carrera"
-                  value={carrera}
-                  onChange={(e) => setCarrera(e.target.value)}
-                  onBlur={(e) => setCarrera(e.target.value)}
-                />
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  type="email"
-                  placeholder="Correo institucional (para avisarte del resultado)"
-                  value={correo}
-                  onChange={(e) => setCorreo(e.target.value)}
-                  onBlur={(e) => setCorreo(e.target.value)}
-                />
-                <div className="flex gap-2">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Solicitud de Pasantía en I+D+i
+                </h2>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-700">Nombre completo</span>
                   <input
-                    className="w-1/2 border rounded-lg px-3 py-2 text-sm"
-                    type="number"
-                    min={1}
-                    max={12}
-                    placeholder="Semestre"
-                    value={semestre}
-                    onChange={(e) => setSemestre(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="Nombre completo"
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
                   />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-700">Número de cuenta</span>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="Número de cuenta"
+                    value={matricula}
+                    onChange={(e) => setMatricula(e.target.value)}
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-700">Carrera</span>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="Carrera"
+                    value={carrera}
+                    onChange={(e) => setCarrera(e.target.value)}
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-700">Correo institucional</span>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    type="email"
+                    placeholder="correo@institucion.edu"
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-700">Número de pasantía</span>
                   <select
-                    className="w-1/2 border rounded-lg px-3 py-2 text-sm"
-                    value={turno}
-                    onChange={(e) => setTurno(e.target.value as TramiteTurno)}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    value={numeroPasantia}
+                    onChange={(e) =>
+                      setNumeroPasantia(e.target.value as TramiteNumeroPasantia)
+                    }
                   >
-                    {TRAMITE_TURNOS.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                    {TRAMITE_NUMEROS_PASANTIA.map((opcion) => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
                     ))}
                   </select>
+                </label>
+
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                  <p className="text-xs font-medium text-gray-500">Departamento solicitado</p>
+                  <p className="text-sm font-semibold text-gray-800">I+D+i</p>
                 </div>
-                <select
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  value={tipo}
-                  onChange={(e) => setTipo(e.target.value as TramiteTipo)}
-                >
-                  {TRAMITE_TIPOS.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-                <textarea
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Describe tu solicitud..."
-                  rows={3}
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                />
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-700">
+                    Motivo u observaciones de la solicitud
+                  </span>
+                  <textarea
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="Describe el motivo u observaciones..."
+                    rows={3}
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                  />
+                </label>
                 {errorCrear && <p className="text-red-600 text-sm">{errorCrear}</p>}
                 <button
                   type="submit"

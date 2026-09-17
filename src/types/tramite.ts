@@ -11,7 +11,10 @@ export type TramiteTipo =
   | "constancia_estudios"
   | "constancia_no_adeudo"
   | "reporte_problema"
+  | "solicitud_pasantia_idi"
   | "otro";
+
+export type TramiteNumeroPasantia = "primera" | "segunda" | "tercera";
 
 export type Tramite = {
   folio: string;
@@ -22,6 +25,7 @@ export type Tramite = {
   turno: TramiteTurno;
   correo: string;
   tipo: TramiteTipo;
+  numeroPasantia: TramiteNumeroPasantia | null;
   descripcion: string;
   estado: TramiteEstado;
   createdAt: string;
@@ -34,7 +38,17 @@ export const TRAMITE_TIPOS: { value: TramiteTipo; label: string }[] = [
   { value: "constancia_estudios", label: "Constancia de estudios" },
   { value: "constancia_no_adeudo", label: "Constancia de no adeudo" },
   { value: "reporte_problema", label: "Reporte de un problema" },
+  { value: "solicitud_pasantia_idi", label: "Solicitud de Pasantía en I+D+i" },
   { value: "otro", label: "Otro" },
+];
+
+export const TRAMITE_NUMEROS_PASANTIA: {
+  value: TramiteNumeroPasantia;
+  label: string;
+}[] = [
+  { value: "primera", label: "Primera pasantía" },
+  { value: "segunda", label: "Segunda pasantía" },
+  { value: "tercera", label: "Tercera pasantía" },
 ];
 
 export const TRAMITE_ESTADO_LABELS: Record<TramiteEstado, string> = {

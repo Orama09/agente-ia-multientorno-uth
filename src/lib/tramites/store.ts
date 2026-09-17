@@ -1,6 +1,12 @@
 import { randomUUID } from "crypto";
 import { getPool, ensureTramitesTable } from "./db";
-import type { Tramite, TramiteEstado, TramiteTipo, TramiteTurno } from "@/types/tramite";
+import type {
+  Tramite,
+  TramiteEstado,
+  TramiteNumeroPasantia,
+  TramiteTipo,
+  TramiteTurno,
+} from "@/types/tramite";
 
 function generateFolio(): string {
   const code = randomUUID().split("-")[0].toUpperCase();
@@ -17,6 +23,7 @@ function rowToTramite(row: any): Tramite {
     turno: row.turno,
     correo: row.correo,
     tipo: row.tipo,
+    numeroPasantia: row.numero_pasantia ?? null,
     descripcion: row.descripcion,
     estado: row.estado,
     createdAt: row.created_at.toISOString(),
@@ -34,6 +41,7 @@ export async function createTramite(input: {
   turno: TramiteTurno;
   correo: string;
   tipo: TramiteTipo;
+  numeroPasantia: TramiteNumeroPasantia | null;
   descripcion: string;
 }): Promise<Tramite> {
   await ensureTramitesTable();
@@ -41,8 +49,8 @@ export async function createTramite(input: {
   const folio = generateFolio();
 
   const result = await pool.query(
-    `INSERT INTO tramites (folio, nombre, matricula, carrera, semestre, turno, correo, tipo, descripcion)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO tramites (folio, nombre, matricula, carrera, semestre, turno, correo, tipo, numero_pasantia, descripcion)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       folio,
@@ -53,6 +61,7 @@ export async function createTramite(input: {
       input.turno,
       input.correo.trim(),
       input.tipo,
+      input.numeroPasantia,
       input.descripcion.trim(),
     ]
   );

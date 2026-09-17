@@ -1,20 +1,47 @@
 import { createTramite, getTramiteByFolio } from "@/lib/tramites/store";
-import type { TramiteTipo } from "@/types/tramite";
+import type { TramiteNumeroPasantia, TramiteTipo } from "@/types/tramite";
 import { notifyNuevoTramite } from "@/lib/tramites/mailer";
 
 const TIPOS_VALIDOS: TramiteTipo[] = [
   "constancia_estudios",
   "constancia_no_adeudo",
   "reporte_problema",
+  "solicitud_pasantia_idi",
   "otro",
+];
+
+const NUMEROS_PASANTIA_VALIDOS: TramiteNumeroPasantia[] = [
+  "primera",
+  "segunda",
+  "tercera",
 ];
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nombre, matricula, carrera, semestre, turno, correo, tipo, descripcion } = body;
+    const {
+      nombre,
+      matricula,
+      carrera,
+      semestre,
+      turno,
+      correo,
+      tipo,
+      numero_pasantia,
+      descripcion,
+    } = body;
 
-    if (!nombre || !matricula || !carrera || !semestre || !turno || !correo || !tipo || !descripcion) {
+    const esSolicitudPasantia = tipo === "solicitud_pasantia_idi";
+
+    if (
+      !nombre ||
+      !matricula ||
+      !carrera ||
+      !correo ||
+      !tipo ||
+      !descripcion ||
+      (!esSolicitudPasantia && (!semestre || !turno))
+    ) {
       return Response.json(
         { error: "Faltan campos obligatorios." },
         { status: 400 }
@@ -25,14 +52,22 @@ export async function POST(req: Request) {
       return Response.json({ error: "Tipo de trámite no válido." }, { status: 400 });
     }
 
+    if (
+      esSolicitudPasantia &&
+      (!numero_pasantia || !NUMEROS_PASANTIA_VALIDOS.includes(numero_pasantia))
+    ) {
+      return Response.json({ error: "Número de pasantía no válido." }, { status: 400 });
+    }
+
     const tramite = await createTramite({
       nombre,
       matricula,
       carrera,
-      semestre: Number(semestre),
-      turno,
+      semestre: esSolicitudPasantia ? 1 : Number(semestre),
+      turno: esSolicitudPasantia ? "matutino" : turno,
       correo,
       tipo,
+      numeroPasantia: esSolicitudPasantia ? numero_pasantia : null,
       descripcion,
     });
 
