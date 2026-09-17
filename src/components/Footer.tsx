@@ -44,14 +44,6 @@ export default function Footer() {
             {/* TODO: dirección real de UTH */}
             Calee del Puente Río Blanco, Col Los Álamos Carretera Armenta, 3 cuadras al oeste, 21101 San Pedro Sula, Cortés, Honduras
           </span>
-          <a
-            href="mailto:correo-pendiente@uth.edu"
-            className="flex items-center gap-2 text-sm text-gray-400 hover:text-[#C9A24B] transition-colors"
-          >
-            <Mail size={16} />
-            {/* TODO: correo real de contacto de UTH */}
-            correo-pendiente@uth.edu
-          </a>
         </div>
       </div>
 
